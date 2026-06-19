@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Settings
@@ -85,7 +86,8 @@ fun LapCountingScreen(
     onGoResults: () -> Unit,
     onToneToggle: (Boolean) -> Unit,
     onVoiceToggle: (Boolean) -> Unit,
-    onVibrationToggle: (Boolean) -> Unit
+    onVibrationToggle: (Boolean) -> Unit,
+    onQrScan: () -> Unit
 ) {
     var confirmReset by remember { mutableStateOf(false) }
     var confirmDnfNumber by remember { mutableStateOf<String?>(null) }
@@ -196,6 +198,14 @@ fun LapCountingScreen(
                         color = DragonGreen,
                         enabled = !state.isRunning,
                         onClick = onStart,
+                        modifier = Modifier.weight(1f)
+                    )
+                    ControlButton(
+                        text = "扫码记圈",
+                        icon = Icons.Filled.QrCodeScanner,
+                        color = DragonRed,
+                        enabled = state.isRunning,
+                        onClick = onQrScan,
                         modifier = Modifier.weight(1f)
                     )
                     ControlButton(
@@ -434,7 +444,7 @@ private fun ControlButton(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier.height(52.dp),
+        modifier = modifier.height(48.dp),
         enabled = enabled,
         shape = RoundedCornerShape(14.dp),
         colors = ButtonDefaults.buttonColors(
@@ -443,11 +453,12 @@ private fun ControlButton(
             contentColor = Color.White,
             disabledContentColor = Color.White.copy(alpha = 0.6f)
         ),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = if (enabled) 4.dp else 0.dp)
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = if (enabled) 4.dp else 0.dp),
+        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
     ) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(22.dp))
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(text, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+        Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(text, fontSize = 14.sp, fontWeight = FontWeight.Bold)
     }
 }
 

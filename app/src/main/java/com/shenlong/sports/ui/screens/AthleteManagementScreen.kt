@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -45,11 +47,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.content.ContentValues
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import com.shenlong.sports.data.Athlete
@@ -58,6 +66,7 @@ import com.shenlong.sports.ui.components.GradientHeader
 import com.shenlong.sports.ui.components.StatusChip
 import com.shenlong.sports.ui.theme.DragonOrange
 import com.shenlong.sports.ui.theme.DragonRed
+import com.shenlong.sports.util.QrCodeGenerator
 
 @Composable
 fun AthleteManagementScreen(
@@ -70,6 +79,8 @@ fun AthleteManagementScreen(
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
     var showBatchDialog by remember { mutableStateOf(false) }
+    var showQrDialog by remember { mutableStateOf(false) }
+    var selectedQrNumber by remember { mutableStateOf<String?>(null) }
 
     val activeCount = athletes.count { it.status != AthleteStatus.DNS }
     val dnsCount = athletes.count { it.status == AthleteStatus.DNS }
@@ -128,6 +139,12 @@ fun AthleteManagementScreen(
                     modifier = Modifier.weight(1f)
                 )
                 ActionButton(
+                    text = "号码布",
+                    icon = Icons.Filled.QrCode,
+                    onClick = { showQrDialog = true },
+                    modifier = Modifier.weight(1f)
+                )
+                ActionButton(
                     text = "进入记圈",
                     icon = Icons.Filled.Add,
                     onClick = onNext,
@@ -178,6 +195,14 @@ fun AthleteManagementScreen(
             }
         )
     }
+
+    // 号码布二维码对话框
+    if (showQrDialog) {
+        QrBibDialog(
+            athletes = athletes,
+            onDismiss = { showQrDialog = false }
+        )
+    }
 }
 
 @Composable
@@ -220,23 +245,24 @@ private fun ActionButton(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier.height(48.dp),
+        modifier = modifier.height(44.dp),
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = if (primary) DragonRed else Color(0xFF546E7A),
             contentColor = Color.White
         ),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
+        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            modifier = Modifier.size(20.dp)
+            modifier = Modifier.size(18.dp)
         )
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(6.dp))
         Text(
             text = text,
-            fontSize = 15.sp,
+            fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold
         )
     }
@@ -448,6 +474,134 @@ private fun BatchImportDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("取消") }
+        }
+    )
+}
+
+/**
+ * 号码布二维码预览对话框
+ */
+@Composable
+private fun QrBibDialog(
+    athletes: List<Athlete>,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    var previewNumber by remember { mutableStateOf(athletes.firstOrNull()?.number) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("号码布二维码", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    "将二维码印在号码布上，扫码记圈时自动识别",
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // 二维码预览
+                if (previewNumber != null) {
+                    val previewAthlete = athletes.find { it.number == previewNumber }
+                    val bitmap = remember(previewNumber) {
+                        QrCodeGenerator.generate(previewNumber!!, previewAthlete?.name ?: "", 256)
+                    }
+                    Card(
+                        modifier = Modifier.size(200.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White)
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            androidx.compose.foundation.Image(
+                                bitmap = bitmap.asImageBitmap(),
+                                contentDescription = "二维码",
+                                modifier = Modifier.size(160.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "${previewNumber}号 运动员",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = DragonRed
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // 号码选择
+                LazyColumn(
+                    modifier = Modifier.height(120.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    items(athletes.size) { index ->
+                        val athlete = athletes[index]
+                        TextButton(
+                            onClick = { previewNumber = athlete.number },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                "${athlete.number}号 ${athlete.name}",
+                                color = if (athlete.number == previewNumber) DragonRed else Color.Gray,
+                                fontWeight = if (athlete.number == previewNumber) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 保存所有二维码到公共相册
+                Button(
+                    onClick = {
+                        try {
+                            var savedCount = 0
+                            athletes.forEach { athlete ->
+                                val bmp = QrCodeGenerator.generate(athlete.number, athlete.name, 512)
+                                val filename = "号码布_${athlete.number}号.png"
+
+                                val contentValues = ContentValues().apply {
+                                    put(MediaStore.Images.Media.DISPLAY_NAME, filename)
+                                    put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                        put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/蜃龙体育号码布")
+                                        put(MediaStore.Images.Media.IS_PENDING, 1)
+                                    }
+                                }
+
+                                val resolver = context.contentResolver
+                                val uri: Uri? = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+
+                                if (uri != null) {
+                                    resolver.openOutputStream(uri)?.use { os ->
+                                        bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, os)
+                                    }
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                        contentValues.clear()
+                                        contentValues.put(MediaStore.Images.Media.IS_PENDING, 0)
+                                        resolver.update(uri, contentValues, null, null)
+                                    }
+                                    savedCount++
+                                }
+                            }
+                            Toast.makeText(context, "已保存${savedCount}个号码布到 相册/蜃龙体育号码布", Toast.LENGTH_LONG).show()
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "保存失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = DragonRed)
+                ) {
+                    Text("保存所有号码布图片")
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("关闭") }
         }
     )
 }

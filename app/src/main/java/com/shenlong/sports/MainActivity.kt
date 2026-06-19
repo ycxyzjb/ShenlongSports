@@ -41,6 +41,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.shenlong.sports.ui.screens.AthleteManagementScreen
 import com.shenlong.sports.ui.screens.LapCountingScreen
+import com.shenlong.sports.ui.screens.QrScanScreen
 import com.shenlong.sports.ui.screens.RaceSetupScreen
 import com.shenlong.sports.ui.screens.ResultsScreen
 import com.shenlong.sports.ui.theme.DragonRed
@@ -181,7 +182,18 @@ fun ShenlongAppContent(feedbackHelper: FeedbackHelper) {
                         onGoResults = { navController.navigate(Screen.Results.route) },
                         onToneToggle = { feedbackHelper.toneEnabled = it },
                         onVoiceToggle = { feedbackHelper.voiceEnabled = it },
-                        onVibrationToggle = { feedbackHelper.vibrationEnabled = it }
+                        onVibrationToggle = { feedbackHelper.vibrationEnabled = it },
+                        onQrScan = { navController.navigate("qr_scan") }
+                    )
+                }
+                composable("qr_scan") {
+                    val activeNumbers = state.athletes
+                        .filter { it.isCounting }
+                        .map { it.number }
+                    QrScanScreen(
+                        athleteNumbers = activeNumbers,
+                        onLapRecorded = { viewModel.addLap(it) },
+                        onBack = { navController.popBackStack() }
                     )
                 }
                 composable(Screen.Results.route) {

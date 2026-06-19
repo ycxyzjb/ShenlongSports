@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.shenlong.sports.data.Athlete
 import com.shenlong.sports.data.AthleteStatus
+import com.shenlong.sports.data.DataRepository
 import com.shenlong.sports.data.RaceConfig
 import com.shenlong.sports.data.RaceResult
 import kotlinx.coroutines.Job
@@ -65,9 +66,49 @@ class RaceViewModel(application: Application) : AndroidViewModel(application) {
 
     private var timerJob: Job? = null
 
+    init {
+        // 从本地存储恢复数据
+        loadPersistedData()
+    }
+
+    /**
+     * 从 SharedPreferences 恢复所有数据
+     */
+    private fun loadPersistedData() {
+        val context = getApplication<Application>()
+        val config = DataRepository.loadConfig(context)
+        val athletes = DataRepository.loadAthletes(context)
+        val (isRunning, startTimestamp, elapsedMs) = DataRepository.loadRaceState(context)
+
+        _uiState.update { it.copy(
+            config = config,
+            athletes = athletes,
+            isRunning = isRunning,
+            startTimestamp = startTimestamp,
+            elapsedMs = elapsedMs
+        )}
+
+        // 如果之前比赛正在进行，恢复计时器
+        if (isRunning) {
+            startTimer()
+        }
+    }
+
+    /**
+     * 持久化保存当前状态
+     */
+    private fun persistState() {
+        val context = getApplication<Application>()
+        val state = _uiState.value
+        DataRepository.saveConfig(context, state.config)
+        DataRepository.saveAthletes(context, state.athletes)
+        DataRepository.saveRaceState(context, state.isRunning, state.startTimestamp, state.elapsedMs)
+    }
+
     // region 比赛设置
     fun updateConfig(config: RaceConfig) {
         _uiState.update { it.copy(config = config) }
+        persistState()
     }
     // endregion
 
@@ -81,6 +122,7 @@ class RaceViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { state ->
             state.copy(athletes = state.athletes + Athlete(number, name, team))
         }
+        persistState()
     }
 
     fun batchImport(lines: List<String>) {
@@ -102,6 +144,7 @@ class RaceViewModel(application: Application) : AndroidViewModel(application) {
                 toastMessage = "成功导入 ${newAthletes.size} 位运动员"
             )
         }
+        persistState()
     }
 
     fun toggleDns(number: String) {
@@ -113,12 +156,14 @@ class RaceViewModel(application: Application) : AndroidViewModel(application) {
                 } else a
             })
         }
+        persistState()
     }
 
     fun deleteAthlete(number: String) {
         _uiState.update { state ->
             state.copy(athletes = state.athletes.filterNot { it.number == number })
         }
+        persistState()
     }
 
     fun clearToast() {
@@ -136,6 +181,7 @@ class RaceViewModel(application: Application) : AndroidViewModel(application) {
         val now = System.currentTimeMillis()
         _uiState.update { it.copy(isRunning = true, startTimestamp = now) }
         startTimer()
+        persistState()
     }
 
     private fun startTimer() {
@@ -155,6 +201,7 @@ class RaceViewModel(application: Application) : AndroidViewModel(application) {
         timerJob?.cancel()
         timerJob = null
         _uiState.update { it.copy(isRunning = false) }
+        persistState()
     }
 
     /** 检查是否所有参赛运动员都已完赛或退赛，如果是则停止计时 */
@@ -185,6 +232,7 @@ class RaceViewModel(application: Application) : AndroidViewModel(application) {
                 toastMessage = "比赛已复位"
             )
         }
+        persistState()
     }
 
     /** 所有运动员记一圈 */
@@ -215,7 +263,7 @@ class RaceViewModel(application: Application) : AndroidViewModel(application) {
                 voiceEvent = VoiceEvent.AllLap(totalLaps)
             )
         }
-        // 检查是否所有人完赛
+        persistState()
         checkAllDone()
     }
 
@@ -251,7 +299,7 @@ class RaceViewModel(application: Application) : AndroidViewModel(application) {
             }
             s.copy(athletes = updated, voiceEvent = voice)
         }
-        // 检查是否所有人完赛
+        persistState()
         checkAllDone()
     }
 
@@ -276,6 +324,7 @@ class RaceViewModel(application: Application) : AndroidViewModel(application) {
             }
             s.copy(athletes = updated, voiceEvent = null, toastMessage = "${number}号减一圈")
         }
+        persistState()
     }
 
     /** 运动员退赛 */
@@ -287,6 +336,7 @@ class RaceViewModel(application: Application) : AndroidViewModel(application) {
             }
             s.copy(athletes = updated, toastMessage = "${number}号已退赛")
         }
+        persistState()
     }
     // endregion
 
@@ -355,5 +405,7 @@ class RaceViewModel(application: Application) : AndroidViewModel(application) {
     override fun onCleared() {
         super.onCleared()
         timerJob?.cancel()
+        // 应用退出时保存数据
+        persistState()
     }
 }
