@@ -35,6 +35,7 @@ object DataRepository {
             put("group", config.group)
             put("distanceMeters", config.distanceMeters)
             put("trackLengthMeters", config.trackLengthMeters)
+            put("qrCooldownSeconds", config.qrCooldownSeconds)
         }
         getPrefs(context).edit().putString(KEY_CONFIG, json.toString()).apply()
     }
@@ -50,7 +51,8 @@ object DataRepository {
                 name = json.optString("name", ""),
                 group = json.optString("group", ""),
                 distanceMeters = json.optInt("distanceMeters", 0),
-                trackLengthMeters = json.optInt("trackLengthMeters", 400)
+                trackLengthMeters = json.optInt("trackLengthMeters", 400),
+                qrCooldownSeconds = json.optInt("qrCooldownSeconds", 5)
             )
         } catch (_: Exception) {
             RaceConfig()

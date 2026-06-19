@@ -87,6 +87,7 @@ import java.util.concurrent.Executors
 @Composable
 fun QrScanScreen(
     athleteNumbers: List<String>,
+    cooldownSeconds: Int = 5,
     onLapRecorded: (String) -> Unit,
     onBack: () -> Unit
 ) {
@@ -96,8 +97,6 @@ fun QrScanScreen(
 
     var hasCameraPermission by remember { mutableStateOf(false) }
     var scanResult by remember { mutableStateOf<String?>(null) }
-    var lastScannedNumber by remember { mutableStateOf<String?>(null) }
-    var lastScanTime by remember { mutableLongStateOf(0L) }
     var scanCount by remember { mutableIntStateOf(0) }
     var autoMode by remember { mutableStateOf(true) }
     var showConfirmDialog by remember { mutableStateOf(false) }
@@ -106,8 +105,15 @@ fun QrScanScreen(
     // 大号码水印闪现
     var flashNumber by remember { mutableStateOf<String?>(null) }
 
-    // 冷却时间5秒
-    val cooldownMs = 5000L
+    // 用rememberSaveable或mutableStateOf保存最新的athleteNumbers引用，确保CameraPreview回调能访问到最新值
+    val currentAthleteNumbers = remember { mutableStateOf(athleteNumbers) }
+    currentAthleteNumbers.value = athleteNumbers
+
+    // 每个号码独立记录最后扫描时间，实现独立冷却
+    val lastScanTimeMap = remember { mutableMapOf<String, Long>() }
+
+    // 冷却时间（从设置中读取，单位：秒）
+    val cooldownMs = (cooldownSeconds.coerceIn(1, 60) * 1000L)
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -136,13 +142,15 @@ fun QrScanScreen(
     // 处理扫描结果
     fun handleScan(content: String) {
         val number = QrCodeGenerator.parseAthleteNumber(content) ?: return
-        if (number !in athleteNumbers) return
+        // 使用currentAthleteNumbers确保拿到最新的活跃号码列表
+        if (number !in currentAthleteNumbers.value) return
 
         val now = System.currentTimeMillis()
-        if (number == lastScannedNumber && (now - lastScanTime) < cooldownMs) return
+        // 每个号码独立冷却检查
+        val lastTime = lastScanTimeMap[number] ?: 0L
+        if ((now - lastTime) < cooldownMs) return
 
-        lastScannedNumber = number
-        lastScanTime = now
+        lastScanTimeMap[number] = now
         scanCount++
 
         // 震动反馈
@@ -299,7 +307,7 @@ fun QrScanScreen(
                         )
                     }
                     Text(
-                        text = if (autoMode) "扫描后自动记圈（5秒冷却）" else "扫描后需确认才记圈",
+                        text = if (autoMode) "扫描后自动记圈（${cooldownSeconds}秒冷却）" else "扫描后需确认才记圈",
                         fontSize = 12.sp,
                         color = Color.Gray
                     )
@@ -370,6 +378,10 @@ private fun CameraPreview(
     val executor = remember { Executors.newSingleThreadExecutor() }
     var lastScanTime by remember { mutableLongStateOf(0L) }
 
+    // 用可变引用保持回调最新，因为factory只执行一次
+    val currentCallback = remember { mutableStateOf(onQrCodeScanned) }
+    currentCallback.value = onQrCodeScanned
+
     DisposableEffect(Unit) {
         onDispose {
             executor.shutdownNow()
@@ -415,7 +427,7 @@ private fun CameraPreview(
                         val now = System.currentTimeMillis()
                         if (now - lastScanTime > 200) {
                             lastScanTime = now
-                            onQrCodeScanned(result.text)
+                            currentCallback.value(result.text)
                         }
                     }
                 } catch (_: Exception) {

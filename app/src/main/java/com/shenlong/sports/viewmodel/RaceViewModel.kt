@@ -23,6 +23,7 @@ sealed class VoiceEvent {
     data class OneLap(val number: String, val completed: Int, val totalLaps: Int) : VoiceEvent()
     data class LastLap(val number: String) : VoiceEvent()
     data class Finished(val number: String, val rank: Int) : VoiceEvent()
+    data object AllFinished : VoiceEvent()
 }
 
 data class RaceUiState(
@@ -209,6 +210,7 @@ class RaceViewModel(application: Application) : AndroidViewModel(application) {
         val state = _uiState.value
         val counting = state.athletes.filter { it.status != AthleteStatus.DNS }
         if (counting.isNotEmpty() && counting.all { it.status == AthleteStatus.FINISHED || it.status == AthleteStatus.DNF }) {
+            _uiState.update { it.copy(voiceEvent = VoiceEvent.AllFinished) }
             stopTiming()
         }
     }
@@ -268,7 +270,7 @@ class RaceViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /** 单个运动员记一圈 */
-    fun addLap(number: String) {
+    fun addLap(number: String, fromQrScan: Boolean = false) {
         val state = _uiState.value
         if (!state.isRunning) {
             _uiState.update { it.copy(toastMessage = "请先开始记圈") }
@@ -291,7 +293,8 @@ class RaceViewModel(application: Application) : AndroidViewModel(application) {
                 } else {
                     if (newLaps == totalLaps - 1) {
                         voice = VoiceEvent.LastLap(a.number)
-                    } else {
+                    } else if (!fromQrScan) {
+                        // 扫码记圈不播报"X号记一圈"，手动记圈才播
                         voice = VoiceEvent.OneLap(a.number, newLaps, totalLaps)
                     }
                     a.copy(completedLaps = newLaps, lastLapTimeMs = now)

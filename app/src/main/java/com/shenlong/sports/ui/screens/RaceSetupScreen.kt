@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.DirectionsRun
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.SportsScore
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -68,6 +69,7 @@ fun RaceSetupScreen(
     var group by remember(config) { mutableStateOf(config.group) }
     var distance by remember(config) { mutableStateOf(if (config.distanceMeters > 0) config.distanceMeters.toString() else "") }
     var trackLength by remember(config) { mutableStateOf(if (config.trackLengthMeters > 0) config.trackLengthMeters.toString() else "400") }
+    var qrCooldown by remember(config) { mutableStateOf(if (config.qrCooldownSeconds > 0) config.qrCooldownSeconds.toString() else "5") }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -145,6 +147,42 @@ fun RaceSetupScreen(
             }
         }
 
+        // 扫码设置卡片
+        Spacer(modifier = Modifier.height(16.dp))
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Text(
+                    text = "扫码设置",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "同一号码布扫码后，在冷却时间内不会重复记圈",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                SetupField(
+                    icon = Icons.Filled.QrCodeScanner,
+                    label = "扫码冷却时间 (秒)",
+                    value = qrCooldown,
+                    placeholder = "默认5秒",
+                    keyboardType = KeyboardType.Number,
+                    onValueChange = { qrCooldown = it.filter { c -> c.isDigit() } }
+                )
+            }
+        }
+
         // 总圈数预览
         Spacer(modifier = Modifier.height(16.dp))
         Card(
@@ -212,7 +250,8 @@ fun RaceSetupScreen(
                         name = name,
                         group = group,
                         distanceMeters = distance.toIntOrNull() ?: 0,
-                        trackLengthMeters = trackLength.toIntOrNull() ?: 400
+                        trackLengthMeters = trackLength.toIntOrNull() ?: 400,
+                        qrCooldownSeconds = qrCooldown.toIntOrNull()?.coerceIn(1, 60) ?: 5
                     )
                     onSave(newConfig)
                     scope.launch {
@@ -233,7 +272,8 @@ fun RaceSetupScreen(
                             name = name,
                             group = group,
                             distanceMeters = distance.toIntOrNull() ?: 0,
-                            trackLengthMeters = trackLength.toIntOrNull() ?: 400
+                            trackLengthMeters = trackLength.toIntOrNull() ?: 400,
+                            qrCooldownSeconds = qrCooldown.toIntOrNull()?.coerceIn(1, 60) ?: 5
                         )
                     )
                     onNext()

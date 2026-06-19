@@ -66,9 +66,10 @@ class VoiceHelper(private val context: Context) : TextToSpeech.OnInitListener {
     fun handleEvent(event: VoiceEvent) {
         val text = when (event) {
             is VoiceEvent.AllLap -> "所有运动员记一圈"
-            is VoiceEvent.OneLap -> "${event.number}号运动员记一圈，已完成${event.completed}圈"
+            is VoiceEvent.OneLap -> "${event.number}号运动员记一圈"
             is VoiceEvent.LastLap -> "${event.number}号运动员还剩一圈"
             is VoiceEvent.Finished -> "${event.number}号运动员完成比赛"
+            is VoiceEvent.AllFinished -> "所有运动员完成比赛"
         }
         speak(text)
     }

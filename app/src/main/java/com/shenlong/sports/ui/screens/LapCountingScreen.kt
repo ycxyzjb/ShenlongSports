@@ -80,9 +80,7 @@ fun LapCountingScreen(
     onAddLap: (String) -> Unit,
     onSubtractLap: (String) -> Unit,
     onDnf: (String) -> Unit,
-    onConsumeVoice: () -> Unit,
     onConsumeToast: () -> Unit,
-    onVoiceEvent: (VoiceEvent) -> Unit,
     onGoResults: () -> Unit,
     onToneToggle: (Boolean) -> Unit,
     onVoiceToggle: (Boolean) -> Unit,
@@ -96,14 +94,6 @@ fun LapCountingScreen(
     var localToneEnabled by remember { mutableStateOf(toneEnabled) }
     var localVoiceEnabled by remember { mutableStateOf(voiceEnabled) }
     var localVibrationEnabled by remember { mutableStateOf(vibrationEnabled) }
-
-    // 处理语音事件
-    LaunchedEffect(state.voiceEvent) {
-        state.voiceEvent?.let {
-            onVoiceEvent(it)
-            onConsumeVoice()
-        }
-    }
 
     // 处理 Toast
     LaunchedEffect(state.toastMessage) {

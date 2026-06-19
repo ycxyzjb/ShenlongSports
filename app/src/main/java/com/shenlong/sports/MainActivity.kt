@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.DirectionsRun
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SportsScore
+import com.shenlong.sports.data.AthleteStatus
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -89,6 +90,14 @@ fun ShenlongAppContent(feedbackHelper: FeedbackHelper) {
         state.toastMessage?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.clearToast()
+        }
+    }
+
+    // 全局语音事件处理（记圈页和扫码页都能触发语音）
+    LaunchedEffect(state.voiceEvent) {
+        state.voiceEvent?.let {
+            feedbackHelper.handleEvent(it)
+            viewModel.clearVoice()
         }
     }
 
@@ -176,9 +185,7 @@ fun ShenlongAppContent(feedbackHelper: FeedbackHelper) {
                         onAddLap = { viewModel.addLap(it) },
                         onSubtractLap = { viewModel.subtractLap(it) },
                         onDnf = { viewModel.markDnf(it) },
-                        onConsumeVoice = { viewModel.clearVoice() },
                         onConsumeToast = { viewModel.clearToast() },
-                        onVoiceEvent = { feedbackHelper.handleEvent(it) },
                         onGoResults = { navController.navigate(Screen.Results.route) },
                         onToneToggle = { feedbackHelper.toneEnabled = it },
                         onVoiceToggle = { feedbackHelper.voiceEnabled = it },
@@ -187,12 +194,14 @@ fun ShenlongAppContent(feedbackHelper: FeedbackHelper) {
                     )
                 }
                 composable("qr_scan") {
+                    // 只传正在记圈的运动员（ACTIVE），完赛的不再识别
                     val activeNumbers = state.athletes
-                        .filter { it.isCounting }
+                        .filter { it.status == AthleteStatus.ACTIVE }
                         .map { it.number }
                     QrScanScreen(
                         athleteNumbers = activeNumbers,
-                        onLapRecorded = { viewModel.addLap(it) },
+                        cooldownSeconds = state.config.qrCooldownSeconds,
+                        onLapRecorded = { viewModel.addLap(it, fromQrScan = true) },
                         onBack = { navController.popBackStack() }
                     )
                 }

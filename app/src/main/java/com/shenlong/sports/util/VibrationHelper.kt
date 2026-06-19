@@ -57,6 +57,7 @@ class VibrationHelper(private val context: Context) {
             is com.shenlong.sports.viewmodel.VoiceEvent.OneLap -> vibrateLap()
             is com.shenlong.sports.viewmodel.VoiceEvent.LastLap -> vibrateLastLap()
             is com.shenlong.sports.viewmodel.VoiceEvent.Finished -> vibrateFinish()
+            is com.shenlong.sports.viewmodel.VoiceEvent.AllFinished -> vibrateFinish()
         }
     }
 }

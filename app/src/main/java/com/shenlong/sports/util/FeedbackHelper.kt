@@ -166,6 +166,7 @@ class FeedbackHelper(private val context: Context) : TextToSpeech.OnInitListener
             is VoiceEvent.OneLap -> { if (toneEnabled) tonePlayer.playLap(); vibrateShort(); speakIfAvailable("${event.number}号记一圈") }
             is VoiceEvent.LastLap -> { if (toneEnabled) tonePlayer.playLastLap(); vibrateDouble(); speakIfAvailable("${event.number}号还剩最后一圈") }
             is VoiceEvent.Finished -> { if (toneEnabled) tonePlayer.playFinish(); vibrateLong(); speakIfAvailable("${event.number}号完成比赛") }
+            is VoiceEvent.AllFinished -> { if (toneEnabled) tonePlayer.playFinish(); vibrateLong(); speakIfAvailable("所有运动员完成比赛") }
         }
     }
 
