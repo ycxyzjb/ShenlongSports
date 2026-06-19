@@ -1,0 +1,24 @@
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Android build output
+/app/build/
+/app/release/
+
+# Keystore (do not commit signing keys)
+*.jks
+*.keystore
+
+# APK files (distributed via GitHub Releases)
+*.apk
+
+# Kotlin daemon
+.kotlin/

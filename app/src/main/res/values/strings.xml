@@ -1,0 +1,65 @@
+<resources>
+    <string name="app_name">蜃龙体育</string>
+    <string name="app_full_name">蜃龙体育长跑记圈系统</string>
+
+    <!-- Navigation -->
+    <string name="nav_setup">比赛设置</string>
+    <string name="nav_athletes">运动员管理</string>
+    <string name="nav_counting">记圈</string>
+    <string name="nav_results">成绩</string>
+
+    <!-- Race Setup -->
+    <string name="race_name">比赛名称</string>
+    <string name="race_group">比赛组别</string>
+    <string name="race_distance">比赛距离 (米)</string>
+    <string name="track_length">跑道长度 (米)</string>
+    <string name="total_laps">总圈数</string>
+    <string name="save_setup">保存设置</string>
+    <string name="next_step">下一步</string>
+
+    <!-- Athletes -->
+    <string name="add_athlete">添加运动员</string>
+    <string name="batch_import">批量导入</string>
+    <string name="athlete_number">号码</string>
+    <string name="athlete_name">姓名</string>
+    <string name="athlete_team">单位/队伍</string>
+    <string name="mark_dns">标记弃权</string>
+    <string name="unmark_dns">取消弃权</string>
+    <string name="dns">弃权</string>
+    <string name="dnf">退赛</string>
+    <string name="delete">删除</string>
+    <string name="confirm">确认</string>
+    <string name="cancel">取消</string>
+
+    <!-- Lap Counting -->
+    <string name="start_timing">开始记圈</string>
+    <string name="reset_race">清零复位</string>
+    <string name="all_one_lap">所有人记一圈</string>
+    <string name="remaining_laps">剩余圈数</string>
+    <string name="completed_laps">已完成</string>
+    <string name="rank">排名</string>
+    <string name="quit_race">退赛</string>
+    <string name="minus_lap">减一圈</string>
+    <string name="add_lap">记一圈</string>
+    <string name="finished">已完成</string>
+
+    <!-- Voice -->
+    <string name="voice_all_lap">所有运动员记一圈</string>
+    <string name="voice_one_lap">%1$d号运动员记一圈</string>
+    <string name="voice_last_lap">%1$d号运动员还剩一圈</string>
+    <string name="voice_finished">%1$d号运动员完成比赛</string>
+
+    <!-- Results -->
+    <string name="export_pdf">导出PDF</string>
+    <string name="share">一键分享</string>
+    <string name="view_results">查看成绩</string>
+    <string name="no_results">暂无成绩数据</string>
+
+    <!-- Misc -->
+    <string name="hint_race_name">如：2024春季运动会</string>
+    <string name="hint_race_group">如：男子组/女子组</string>
+    <string name="hint_athlete_number">如：001</string>
+    <string name="hint_athlete_name">如：张三</string>
+    <string name="hint_athlete_team">如：第一代表队</string>
+    <string name="batch_hint">每行一位：号码,姓名,单位</string>
+</resources>
