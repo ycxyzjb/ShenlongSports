@@ -66,6 +66,7 @@ import com.shenlong.sports.ui.components.GradientHeader
 import com.shenlong.sports.ui.components.StatusChip
 import com.shenlong.sports.ui.theme.DragonOrange
 import com.shenlong.sports.ui.theme.DragonRed
+import com.shenlong.sports.util.FileParser
 import com.shenlong.sports.util.QrCodeGenerator
 
 @Composable
@@ -406,18 +407,26 @@ private fun BatchImportDialog(
     onConfirm: (String) -> Unit
 ) {
     var text by remember { mutableStateOf("") }
+    var importMessage by remember { mutableStateOf("") }
     val context = LocalContext.current
 
-    // 文件选择器
+    // 文件选择器（支持Excel、Word、CSV、TXT）
     val fileLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         uri?.let {
             try {
-                val content = context.contentResolver.openInputStream(it)?.bufferedReader()?.readText() ?: ""
-                text = content
+                val result = FileParser.parseFile(context, it)
+                if (result.lines.isNotEmpty()) {
+                    text = result.lines.joinToString("\n")
+                    importMessage = "已解析${result.lines.size}条数据"
+                } else if (result.errors.isNotEmpty()) {
+                    importMessage = result.errors.first()
+                } else {
+                    importMessage = "未找到有效数据"
+                }
             } catch (e: Exception) {
-                // 读取失败则忽略
+                importMessage = "文件读取失败：${e.message}"
             }
         }
     }
@@ -436,7 +445,14 @@ private fun BatchImportDialog(
                 // 文件导入按钮
                 Button(
                     onClick = {
-                        fileLauncher.launch(arrayOf("text/*", "text/csv", "text/plain", "application/vnd.ms-excel"))
+                        fileLauncher.launch(arrayOf(
+                            "text/*",
+                            "text/csv",
+                            "text/plain",
+                            "application/vnd.ms-excel",
+                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        ))
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(8.dp),
@@ -447,7 +463,16 @@ private fun BatchImportDialog(
                 ) {
                     Icon(Icons.Filled.InsertDriveFile, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("从文件导入 (TXT/CSV)", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    Text("从文件导入 (Excel/Word/TXT)", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                }
+                if (importMessage.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = importMessage,
+                        fontSize = 12.sp,
+                        color = if (importMessage.startsWith("已解析")) Color(0xFF2E7D32) else DragonOrange,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(

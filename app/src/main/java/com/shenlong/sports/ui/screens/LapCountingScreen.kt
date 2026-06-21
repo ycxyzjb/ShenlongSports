@@ -283,14 +283,16 @@ fun LapCountingScreen(
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     rowAthletes.forEach { athlete ->
+                                        val isLastLap = athlete.status == AthleteStatus.ACTIVE &&
+                                                (state.totalLaps - athlete.completedLaps) == 1
                                         Button(
                                             onClick = { onAddLap(athlete.number) },
                                             enabled = state.isRunning,
                                             modifier = Modifier.weight(1f).height(40.dp),
                                             shape = RoundedCornerShape(10.dp),
                                             colors = ButtonDefaults.buttonColors(
-                                                containerColor = DragonRed,
-                                                disabledContainerColor = DragonRed.copy(alpha = 0.35f),
+                                                containerColor = if (isLastLap) DragonOrange else DragonRed,
+                                                disabledContainerColor = (if (isLastLap) DragonOrange else DragonRed).copy(alpha = 0.35f),
                                                 contentColor = Color.White,
                                                 disabledContentColor = Color.White.copy(alpha = 0.6f)
                                             ),
@@ -466,11 +468,13 @@ private fun AthleteLapCard(
     val isDnf = athlete.status == AthleteStatus.DNF
     val isActive = athlete.status == AthleteStatus.ACTIVE
     val remaining = (totalLaps - athlete.completedLaps).coerceAtLeast(0)
+    val isLastLap = isActive && remaining == 1
     val progress = if (totalLaps > 0) athlete.completedLaps.toFloat() / totalLaps else 0f
 
     val cardColor = when {
         isFinished -> DragonGreen.copy(alpha = 0.1f)
         isDnf -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        isLastLap -> DragonOrange.copy(alpha = 0.08f)
         rank == 1 -> DragonGold.copy(alpha = 0.12f)
         else -> MaterialTheme.colorScheme.surface
     }
@@ -504,6 +508,7 @@ private fun AthleteLapCard(
                             when {
                                 isFinished -> DragonGreen
                                 isDnf -> Color.Gray
+                                isLastLap -> DragonOrange
                                 else -> DragonRed
                             }
                         ),

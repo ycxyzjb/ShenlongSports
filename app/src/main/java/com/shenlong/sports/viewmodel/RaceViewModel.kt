@@ -205,13 +205,17 @@ class RaceViewModel(application: Application) : AndroidViewModel(application) {
         persistState()
     }
 
-    /** 检查是否所有参赛运动员都已完赛或退赛，如果是则停止计时 */
+    /** 检查是否所有参赛运动员都已完赛或退赛，如果是则停止计时并归零 */
     private fun checkAllDone() {
         val state = _uiState.value
         val counting = state.athletes.filter { it.status != AthleteStatus.DNS }
         if (counting.isNotEmpty() && counting.all { it.status == AthleteStatus.FINISHED || it.status == AthleteStatus.DNF }) {
             _uiState.update { it.copy(voiceEvent = VoiceEvent.AllFinished) }
-            stopTiming()
+            // 停止计时并将秒表归零
+            timerJob?.cancel()
+            timerJob = null
+            _uiState.update { it.copy(isRunning = false, elapsedMs = 0L) }
+            persistState()
         }
     }
 

@@ -110,7 +110,7 @@ fun ResultsScreen(
                         InfoLine(label = "组别", value = config.group.ifEmpty { "-" })
                         InfoLine(label = "距离", value = "${config.distanceMeters} 米")
                         InfoLine(label = "跑道", value = "${config.trackLengthMeters} 米 / 圈")
-                        InfoLine(label = "总圈数", value = "${config.totalLaps} 圈")
+                        InfoLine(label = "圈数", value = "${config.totalLaps} 圈")
                         InfoLine(label = "用时", value = PdfGenerator.formatElapsed(elapsedMs))
                     }
                 }
@@ -198,12 +198,13 @@ fun ResultsScreen(
                         .padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("名次", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(50.dp))
-                    Text("号码", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(56.dp))
-                    Text("姓名", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                    Text("单位", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(90.dp))
-                    Text("圈数", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(60.dp), textAlign = TextAlign.Center)
-                    Text("状态", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(56.dp), textAlign = TextAlign.Center)
+                    Text("名次", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(40.dp))
+                    Text("号码", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(44.dp))
+                    Text("姓名", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(52.dp))
+                    Text("单位/队伍", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                    Text("圈数", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(48.dp), textAlign = TextAlign.Center)
+                    Text("完赛用时", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(56.dp), textAlign = TextAlign.Center)
+                    Text("状态", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(52.dp), textAlign = TextAlign.Center)
                 }
             }
 
@@ -377,7 +378,7 @@ private fun ResultRow(result: RaceResult) {
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = textColor,
-                modifier = Modifier.width(50.dp)
+                modifier = Modifier.width(40.dp)
             )
         }
         // 号码
@@ -385,7 +386,7 @@ private fun ResultRow(result: RaceResult) {
             text = result.number,
             fontSize = 13.sp,
             color = textColor,
-            modifier = Modifier.width(56.dp)
+            modifier = Modifier.width(44.dp)
         )
         // 姓名
         Text(
@@ -393,14 +394,15 @@ private fun ResultRow(result: RaceResult) {
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
             color = textColor,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.width(52.dp),
+            maxLines = 1
         )
-        // 单位
+        // 单位/队伍
         Text(
             text = result.team.ifEmpty { "-" },
             fontSize = 12.sp,
             color = textColor.copy(alpha = 0.7f),
-            modifier = Modifier.width(90.dp),
+            modifier = Modifier.weight(1f),
             maxLines = 1
         )
         // 圈数
@@ -408,11 +410,20 @@ private fun ResultRow(result: RaceResult) {
             text = if (result.isDns) "-" else "${result.completedLaps}/${result.totalLaps}",
             fontSize = 13.sp,
             color = textColor,
-            modifier = Modifier.width(60.dp),
+            modifier = Modifier.width(48.dp),
+            textAlign = TextAlign.Center
+        )
+        // 完赛用时
+        Text(
+            text = if (result.isFinished) PdfGenerator.formatElapsed(result.finishTimeMs) else "-",
+            fontSize = 12.sp,
+            color = if (result.isFinished) DragonGreen else textColor.copy(alpha = 0.5f),
+            fontWeight = if (result.isFinished) FontWeight.Medium else FontWeight.Normal,
+            modifier = Modifier.width(56.dp),
             textAlign = TextAlign.Center
         )
         // 状态
-        Box(modifier = Modifier.width(56.dp), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.width(52.dp), contentAlignment = Alignment.Center) {
             StatusChip(label = result.statusLabel)
         }
     }

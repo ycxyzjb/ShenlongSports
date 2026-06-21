@@ -104,8 +104,8 @@ object PdfGenerator {
             y += 25f
 
             // 表头
-            val cols = floatArrayOf(margin, margin + 45, margin + 110, margin + 250, margin + 360, margin + 440, margin + 520)
-            val headers = arrayOf("排名", "号码", "姓名", "单位/队伍", "完成圈数", "成绩", "状态")
+            val cols = floatArrayOf(margin, margin + 45, margin + 110, margin + 190, margin + 350, margin + 430, margin + 500)
+            val headers = arrayOf("排名", "号码", "姓名", "单位/队伍", "完成圈数", "完赛用时", "状态")
             val rowHeight = 28f
 
             // 表头背景

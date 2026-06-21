@@ -8,20 +8,19 @@ import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
-import android.speech.tts.TextToSpeech
 import android.util.Log
 import com.shenlong.sports.viewmodel.VoiceEvent
-import java.util.Locale
 
 /**
- * 反馈管理器 - 提示音 + 震动 + 语音（本地TTS优先，网络TTS降级）
+ * 反馈管理器 - 提示音 + 震动 + 语音（缓存TTS）
  *
  * 语音策略：
- * 1. 优先尝试本地TTS引擎（速度快，无需网络）
- * 2. 本地TTS不可用时，降级使用网络TTS（Google Translate TTS接口）
+ * 1. 优先播放缓存音频（零延迟，首次使用系统TTS合成后永久缓存）
+ * 2. 无缓存时实时TTS播报，同时后台缓存供下次使用
  * 3. 提示音+震动始终可用，语音是锦上添花
+ * 4. 无侵权风险（不使用任何第三方非公开接口）
  */
-class FeedbackHelper(private val context: Context) : TextToSpeech.OnInitListener {
+class FeedbackHelper(private val context: Context) {
 
     private val handler = Handler(Looper.getMainLooper())
     private val prefs = context.getSharedPreferences("feedback_prefs", Context.MODE_PRIVATE)
@@ -29,8 +28,8 @@ class FeedbackHelper(private val context: Context) : TextToSpeech.OnInitListener
     // 提示音播放器
     private val tonePlayer = TonePlayer(context)
 
-    // 网络TTS播放器（本地TTS不可用时的降级方案）
-    private val networkTts = NetworkTtsPlayer(context)
+    // 缓存TTS播放器（首次用系统TTS合成，之后直接播放缓存文件）
+    private val cachedTts = CachedTtsPlayer(context)
 
     // 三个开关（持久化）
     var toneEnabled: Boolean
@@ -45,12 +44,6 @@ class FeedbackHelper(private val context: Context) : TextToSpeech.OnInitListener
         get() = prefs.getBoolean("vibration_enabled", true)
         set(value) { prefs.edit().putBoolean("vibration_enabled", value).apply() }
 
-    // 本地TTS
-    private var tts: TextToSpeech? = null
-    private var localTtsReady = false
-    private var activityRef: Activity? = null
-    private var ttsInitStarted = false
-
     private val vibrator: Vibrator by lazy {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val manager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
@@ -62,68 +55,22 @@ class FeedbackHelper(private val context: Context) : TextToSpeech.OnInitListener
     }
 
     fun setActivity(activity: Activity) {
-        activityRef = activity
+        // 启动TTS初始化和预缓存
+        cachedTts.init()
     }
 
     fun onActivityResumed() {
-        if (!ttsInitStarted) {
-            ttsInitStarted = true
-            handler.postDelayed({ startTtsInit() }, 2000)
-        }
-    }
-
-    private fun startTtsInit() {
-        val activity = activityRef
-        if (activity == null || activity.isFinishing || activity.isDestroyed) return
-
-        try {
-            Log.i(TAG, "尝试初始化本地TTS")
-            tts = TextToSpeech(activity, this)
-            // 10秒超时
-            handler.postDelayed({
-                if (!localTtsReady) {
-                    Log.w(TAG, "本地TTS初始化超时，将使用网络TTS")
-                }
-            }, 10000)
-        } catch (e: Exception) {
-            Log.e(TAG, "本地TTS初始化异常: ${e.message}")
-        }
-    }
-
-    override fun onInit(status: Int) {
-        if (status == TextToSpeech.SUCCESS) {
-            val locales = listOf(Locale.CHINA, Locale.SIMPLIFIED_CHINESE, Locale.CHINESE, Locale("zh", "CN"), Locale.getDefault())
-            for (locale in locales) {
-                try {
-                    val result = tts?.setLanguage(locale) ?: TextToSpeech.LANG_NOT_SUPPORTED
-                    if (result != TextToSpeech.LANG_MISSING_DATA && result != TextToSpeech.LANG_NOT_SUPPORTED) break
-                } catch (_: Exception) { }
-            }
-            localTtsReady = true
-            tts?.setSpeechRate(1.0f)
-            tts?.setPitch(1.0f)
-            Log.i(TAG, "本地TTS就绪")
-        } else {
-            Log.w(TAG, "本地TTS不可用(status=$status)，将使用网络TTS")
-        }
+        cachedTts.init()
     }
 
     // ===== 语音播放 =====
 
     /**
-     * 语音播报：本地TTS优先，不可用时降级到网络TTS
+     * 语音播报：优先缓存，降级实时TTS
      */
     private fun speakIfAvailable(text: String) {
         if (!voiceEnabled) return
-
-        if (localTtsReady) {
-            try {
-                tts?.speak(text, TextToSpeech.QUEUE_ADD, null, "shenlong_${System.currentTimeMillis()}")
-            } catch (_: Exception) { }
-        } else {
-            // 本地TTS不可用，使用网络TTS
-            networkTts.speak(text)
-        }
+        cachedTts.speak(text)
     }
 
     // ===== 震动 =====
@@ -163,35 +110,24 @@ class FeedbackHelper(private val context: Context) : TextToSpeech.OnInitListener
     fun handleEvent(event: VoiceEvent) {
         when (event) {
             is VoiceEvent.AllLap -> { if (toneEnabled) tonePlayer.playAllLap(); vibrateShort(); speakIfAvailable("所有运动员记一圈") }
-            is VoiceEvent.OneLap -> { if (toneEnabled) tonePlayer.playLap(); vibrateShort(); speakIfAvailable("${event.number}号记一圈") }
+            is VoiceEvent.OneLap -> { if (toneEnabled) tonePlayer.playLap(); vibrateShort(); speakIfAvailable("${event.number}号") }
             is VoiceEvent.LastLap -> { if (toneEnabled) tonePlayer.playLastLap(); vibrateDouble(); speakIfAvailable("${event.number}号还剩最后一圈") }
-            is VoiceEvent.Finished -> { if (toneEnabled) tonePlayer.playFinish(); vibrateLong(); speakIfAvailable("${event.number}号完成比赛") }
+            is VoiceEvent.Finished -> { if (toneEnabled) tonePlayer.playFinish(); vibrateLong(); speakIfAvailable("${event.number}号") }
             is VoiceEvent.AllFinished -> { if (toneEnabled) tonePlayer.playFinish(); vibrateLong(); speakIfAvailable("所有运动员完成比赛") }
         }
     }
 
     // ===== 外部接口 =====
 
-    /**
-     * 语音是否可用：本地TTS就绪 或 网络TTS可用
-     */
     val isTtsReady: Boolean
-        get() = localTtsReady || networkTts.isAvailable
+        get() = cachedTts.isReady
 
-    /**
-     * 语音类型描述
-     */
     val voiceType: String
-        get() = when {
-            localTtsReady -> "本地TTS"
-            networkTts.isAvailable -> "网络TTS"
-            else -> "未就绪"
-        }
+        get() = if (cachedTts.cacheCount > 0) "缓存TTS(${cachedTts.cacheCount}条)" else if (cachedTts.isReady) "本地TTS" else "未就绪"
 
     fun release() {
         tonePlayer.release()
-        networkTts.release()
-        tts?.stop(); tts?.shutdown(); tts = null; localTtsReady = false
+        cachedTts.release()
         handler.removeCallbacksAndMessages(null)
     }
 
