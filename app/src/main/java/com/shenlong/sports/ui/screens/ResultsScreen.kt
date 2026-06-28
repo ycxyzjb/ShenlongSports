@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -111,7 +112,7 @@ fun ResultsScreen(
                         InfoLine(label = "距离", value = "${config.distanceMeters} 米")
                         InfoLine(label = "跑道", value = "${config.trackLengthMeters} 米 / 圈")
                         InfoLine(label = "圈数", value = "${config.totalLaps} 圈")
-                        InfoLine(label = "用时", value = PdfGenerator.formatElapsed(elapsedMs))
+
                     }
                 }
             }
@@ -211,6 +212,16 @@ fun ResultsScreen(
             // 成绩列表
             items(results, key = { it.number }) { result ->
                 ResultRow(result)
+                // 取前N名分割线
+                if (config.awardTopN > 0 && result.isFinished && result.rank == config.awardTopN) {
+                    HorizontalDivider(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        thickness = 2.dp,
+                        color = DragonRed.copy(alpha = 0.6f)
+                    )
+                }
             }
 
             if (results.isEmpty()) {

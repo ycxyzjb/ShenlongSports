@@ -298,11 +298,20 @@ fun LapCountingScreen(
                                             ),
                                             contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
                                         ) {
-                                            Text(
-                                                text = "${athlete.number}号",
-                                                fontSize = 14.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
+                                            Box(modifier = Modifier.fillMaxWidth()) {
+                                                Text(
+                                                    text = "${athlete.number}号",
+                                                    fontSize = 14.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    modifier = Modifier.align(Alignment.Center)
+                                                )
+                                                val remaining = state.totalLaps - athlete.completedLaps
+                                                Text(
+                                                    text = "$remaining",
+                                                    fontSize = 9.sp,
+                                                    modifier = Modifier.align(Alignment.TopEnd)
+                                                )
+                                            }
                                         }
                                     }
                                     // 不足4个时用空占位保持对齐
@@ -589,7 +598,7 @@ private fun AthleteLapCard(
                         ),
                         contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
                     ) {
-                        Text("记一圈", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        Text("+记一圈", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                     }
                     // 减一圈
                     Button(

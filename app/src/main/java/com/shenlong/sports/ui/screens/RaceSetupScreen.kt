@@ -70,6 +70,7 @@ fun RaceSetupScreen(
     var distance by remember(config) { mutableStateOf(if (config.distanceMeters > 0) config.distanceMeters.toString() else "") }
     var trackLength by remember(config) { mutableStateOf(if (config.trackLengthMeters > 0) config.trackLengthMeters.toString() else "400") }
     var qrCooldown by remember(config) { mutableStateOf(if (config.qrCooldownSeconds > 0) config.qrCooldownSeconds.toString() else "5") }
+    var awardTopN by remember(config) { mutableStateOf(if (config.awardTopN > 0) config.awardTopN.toString() else "3") }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -183,6 +184,42 @@ fun RaceSetupScreen(
             }
         }
 
+        // 成绩设置卡片
+        Spacer(modifier = Modifier.height(16.dp))
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Text(
+                    text = "成绩设置",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "成绩单中在前N名下方显示分割线，0则不显示",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                SetupField(
+                    icon = Icons.Filled.SportsScore,
+                    label = "取前N名",
+                    value = awardTopN,
+                    placeholder = "默认3",
+                    keyboardType = KeyboardType.Number,
+                    onValueChange = { awardTopN = it.filter { c -> c.isDigit() } }
+                )
+            }
+        }
+
         // 总圈数预览
         Spacer(modifier = Modifier.height(16.dp))
         Card(
@@ -251,7 +288,8 @@ fun RaceSetupScreen(
                         group = group,
                         distanceMeters = distance.toIntOrNull() ?: 0,
                         trackLengthMeters = trackLength.toIntOrNull() ?: 400,
-                        qrCooldownSeconds = qrCooldown.toIntOrNull()?.coerceIn(1, 60) ?: 5
+                        qrCooldownSeconds = qrCooldown.toIntOrNull()?.coerceIn(1, 60) ?: 5,
+                        awardTopN = awardTopN.toIntOrNull()?.coerceIn(0, 999) ?: 3
                     )
                     onSave(newConfig)
                     scope.launch {
@@ -273,7 +311,8 @@ fun RaceSetupScreen(
                             group = group,
                             distanceMeters = distance.toIntOrNull() ?: 0,
                             trackLengthMeters = trackLength.toIntOrNull() ?: 400,
-                            qrCooldownSeconds = qrCooldown.toIntOrNull()?.coerceIn(1, 60) ?: 5
+                            qrCooldownSeconds = qrCooldown.toIntOrNull()?.coerceIn(1, 60) ?: 5,
+                            awardTopN = awardTopN.toIntOrNull()?.coerceIn(0, 999) ?: 3
                         )
                     )
                     onNext()

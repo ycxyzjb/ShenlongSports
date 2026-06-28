@@ -24,7 +24,8 @@ object PdfGenerator {
         context: Context,
         config: RaceConfig,
         results: List<RaceResult>,
-        elapsedMs: Long
+        elapsedMs: Long,
+        awardTopN: Int = config.awardTopN
     ): Uri? {
         return try {
             val fileName = "成绩单_${config.name}_${System.currentTimeMillis()}.pdf"
@@ -100,7 +101,7 @@ object PdfGenerator {
                 isFakeBoldText = true
                 setARGB(255, 180, 50, 50)
             }
-            canvas.drawText("此成绩单仅用于确定名次，计时成绩以计时裁判为准。", margin, y, disclaimerPaint)
+            canvas.drawText("此成绩单仅用于确定名次，完赛用时以计时裁判为准。", margin, y, disclaimerPaint)
             y += 25f
 
             // 表头
@@ -165,6 +166,15 @@ object PdfGenerator {
                     }
                 }
                 canvas.drawText(result.statusLabel, cols[6], y, statusPaint)
+
+                // 取前N名：第N名行底边框变色作为分割线
+                if (awardTopN > 0 && result.isFinished && result.rank == awardTopN) {
+                    val dividerPaint = android.graphics.Paint().apply {
+                        setARGB(255, 229, 57, 53)
+                    }
+                    val rowBottom = y + rowHeight - 18
+                    canvas.drawRect(margin - 5, rowBottom - 2, 595 - margin + 5, rowBottom + 2, dividerPaint)
+                }
 
                 y += rowHeight
             }
