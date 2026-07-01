@@ -20,8 +20,8 @@ android {
         applicationId = "com.shenlong.sports"
         minSdk = 24
         targetSdk = 34
-        versionCode = 4
-        versionName = "2.0.0.2"
+        versionCode = 5
+        versionName = "2.0.0.3"
         vectorDrawables { useSupportLibrary = true }
     }
 

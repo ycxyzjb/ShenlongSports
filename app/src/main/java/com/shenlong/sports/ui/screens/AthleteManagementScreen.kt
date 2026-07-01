@@ -76,11 +76,13 @@ fun AthleteManagementScreen(
     onBatchImport: (List<String>) -> Unit,
     onToggleDns: (String) -> Unit,
     onDelete: (String) -> Unit,
+    onClearAll: () -> Unit,
     onNext: () -> Unit
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
     var showBatchDialog by remember { mutableStateOf(false) }
     var showQrDialog by remember { mutableStateOf(false) }
+    var showClearConfirm by remember { mutableStateOf(false) }
     var selectedQrNumber by remember { mutableStateOf<String?>(null) }
 
     val activeCount = athletes.count { it.status != AthleteStatus.DNS }
@@ -146,11 +148,11 @@ fun AthleteManagementScreen(
                     modifier = Modifier.weight(1f)
                 )
                 ActionButton(
-                    text = "进入记圈",
-                    icon = Icons.Filled.Add,
-                    onClick = onNext,
+                    text = "清除全部",
+                    icon = Icons.Filled.Delete,
+                    onClick = { showClearConfirm = true },
                     modifier = Modifier.weight(1f),
-                    primary = true
+                    color = DragonOrange
                 )
             }
 
@@ -173,6 +175,24 @@ fun AthleteManagementScreen(
                 }
             }
         }
+    }
+
+    // 清除全部确认对话框
+    if (showClearConfirm) {
+        AlertDialog(
+            onDismissRequest = { showClearConfirm = false },
+            title = { Text("确认清除", fontWeight = FontWeight.Bold) },
+            text = { Text("将清除所有运动员数据，此操作不可撤销。") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showClearConfirm = false
+                    onClearAll()
+                }) { Text("确认清除", color = DragonOrange, fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearConfirm = false }) { Text("取消") }
+            }
+        )
     }
 
     // 添加对话框
@@ -242,14 +262,20 @@ private fun ActionButton(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    primary: Boolean = false
+    primary: Boolean = false,
+    color: Color = Color.Unspecified
 ) {
+    val containerColor = when {
+        color != Color.Unspecified -> color
+        primary -> DragonRed
+        else -> Color(0xFF546E7A)
+    }
     Button(
         onClick = onClick,
         modifier = modifier.height(44.dp),
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = if (primary) DragonRed else Color(0xFF546E7A),
+            containerColor = containerColor,
             contentColor = Color.White
         ),
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
@@ -275,6 +301,7 @@ private fun AthleteCard(
     onToggleDns: () -> Unit,
     onDelete: () -> Unit
 ) {
+    var showDeleteConfirm by remember { mutableStateOf(false) }
     val isDns = athlete.status == AthleteStatus.DNS
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -336,7 +363,7 @@ private fun AthleteCard(
                 )
             }
             // 删除
-            IconButton(onClick = onDelete) {
+            IconButton(onClick = { showDeleteConfirm = true }) {
                 Icon(
                     Icons.Filled.Delete,
                     contentDescription = "删除",
@@ -345,6 +372,22 @@ private fun AthleteCard(
                 )
             }
         }
+    }
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("确认删除", fontWeight = FontWeight.Bold) },
+            text = { Text("确定要删除 ${athlete.number}号 ${athlete.name} 吗？") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteConfirm = false
+                    onDelete()
+                }) { Text("删除", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) { Text("取消") }
+            }
+        )
     }
 }
 

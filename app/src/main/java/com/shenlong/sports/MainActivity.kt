@@ -169,6 +169,7 @@ fun ShenlongAppContent(feedbackHelper: FeedbackHelper) {
                         onBatchImport = { lines -> viewModel.batchImport(lines) },
                         onToggleDns = { viewModel.toggleDns(it) },
                         onDelete = { viewModel.deleteAthlete(it) },
+                        onClearAll = { viewModel.clearAllAthletes() },
                         onNext = { navController.navigate(Screen.Counting.route) }
                     )
                 }

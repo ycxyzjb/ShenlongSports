@@ -167,6 +167,13 @@ class RaceViewModel(application: Application) : AndroidViewModel(application) {
         persistState()
     }
 
+    fun clearAllAthletes() {
+        _uiState.update { state ->
+            state.copy(athletes = emptyList())
+        }
+        persistState()
+    }
+
     fun clearToast() {
         _uiState.update { it.copy(toastMessage = null) }
     }

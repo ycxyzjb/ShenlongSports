@@ -59,6 +59,7 @@ import com.shenlong.sports.ui.components.GradientHeader
 import com.shenlong.sports.ui.components.RankBadge
 import com.shenlong.sports.ui.components.StatusChip
 import com.shenlong.sports.ui.components.StopwatchDisplay
+import com.shenlong.sports.util.PdfGenerator
 import com.shenlong.sports.ui.theme.DragonDark
 import com.shenlong.sports.ui.theme.DragonGold
 import com.shenlong.sports.ui.theme.DragonGreen
@@ -357,6 +358,7 @@ fun LapCountingScreen(
                     rank = rank,
                     athlete = athlete,
                     totalLaps = totalLaps,
+                    startTimestamp = state.startTimestamp,
                     isRunning = state.isRunning,
                     onAddLap = { onAddLap(athlete.number) },
                     onSubtractLap = { onSubtractLap(athlete.number) },
@@ -468,6 +470,7 @@ private fun AthleteLapCard(
     rank: Int,
     athlete: Athlete,
     totalLaps: Int,
+    startTimestamp: Long,
     isRunning: Boolean,
     onAddLap: () -> Unit,
     onSubtractLap: () -> Unit,
@@ -541,9 +544,15 @@ private fun AthleteLapCard(
                         fontWeight = FontWeight.SemiBold,
                         color = if (isDnf) Color.Gray else MaterialTheme.colorScheme.onSurface
                     )
+                    val lapText = if (isFinished) {
+                        val finishMs = if (startTimestamp > 0 && athlete.lastLapTimeMs > startTimestamp) athlete.lastLapTimeMs - startTimestamp else 0L
+                        "已完成 ${athlete.completedLaps}/$totalLaps 圈 · 用时 ${PdfGenerator.formatElapsed(finishMs)}"
+                    } else {
+                        "已完成 ${athlete.completedLaps}/$totalLaps 圈" +
+                            if (isActive && remaining > 0) " · 剩余 $remaining 圈" else ""
+                    }
                     Text(
-                        text = "已完成 ${athlete.completedLaps}/$totalLaps 圈" +
-                            if (isActive && remaining > 0) " · 剩余 $remaining 圈" else "",
+                        text = lapText,
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
